@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>破邪ノ剣閃・迷宮伝</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Sawarabi+Mincho&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --washi-bg: #f5f2e9;
+            --sumi-black: #1a1a1a;
+            --gold-accent: #d4af37;
+            --blood-red: #8b0000;
+            --wood-brown: #3e2723;
+            --magic-blue: #00f2ff;
+            --ui-font: 'Sawarabi Mincho', serif;
+            --title-font: 'Noto Serif JP', serif;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--sumi-black);
+            font-family: var(--ui-font);
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            transition: transform 0.1s;
+        }
+
+        .item-btn {
+            background: #e0f2f1;
+            border: 1px solid #00796b;
+            padding: 2px 8px;
+            font-size: 0.85em;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+        .item-btn:disabled {
+            background: #eee;
+            border-color: #ccc;
+            cursor: default;
+        }
+
+        #three-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translate(1px, 1px) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(-3px, -2px) rotate(-1deg);
+            }
+
+            20% {
+                transform: translate(-5px, 0px) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(5px, 2px) rotate(0deg);
+            }
+
+            40% {
+                transform: translate(1px, -1px) rotate(1deg);
+            }
+
+            50% {
+                transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s;
+        }
+
+        @keyframes slice-upper {
+            0% {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-120px) rotate(-15deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slice-lower {
+            0% {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(120px) rotate(15deg);
+                opacity: 0;
+            }
+        }
+
+        .slice-upper {
+            animation: slice-upper 0.8s forwards ease-in;
+            clip-path: inset(0 0 50% 0);
+            position: absolute;
+        }
+
+        .slice-lower {
+            animation: slice-lower 0.8s forwards ease-in;
+            clip-path: inset(50% 0 0 0);
+            position: absolute;
+        }
+
+        @keyframes slash {
+            0% {
+                transform: scaleX(0) rotate(-45deg);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scaleX(1.5) rotate(-45deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scaleX(1.5) rotate(-45deg);
+                opacity: 0;
+            }
+        }
+
+        #clear-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #fff;
+            opacity: 0;
+        }
+
+        .fade-in-clear {
+            display: flex !important;
+            animation: fadeInClear 4s forwards ease-in-out;
+        }
+
+        @keyframes fadeInClear {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            100% { opacity: 1; }
+        }
+
+        #clear-title {
+            font-size: 4em;
+            color: var(--gold-accent);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+            margin-bottom: 30px;
+            letter-spacing: 5px;
+        }
+
+        #clear-msg {
+            font-size: 1.5em;
+            line-height: 1.8;
+            max-width: 80%;
+        }
+
+        .slash-line {
+            position: absolute;
+            width: 140%;
+            height: 4px;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+            z-index: 1600;
+            pointer-events: none;
+            left: -20%;
+            top: 50%;
+            animation: slash 0.3s forwards;
+            transform-origin: center;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .hud-panel {
+            background: rgba(245, 242, 233, 0.9);
+            border: 3px solid var(--wood-brown);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            pointer-events: auto;
+            position: relative;
+        }
+
+        .hud-panel::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid var(--gold-accent);
+            pointer-events: none;
+        }
+
+        h2,
+        h3 {
+            font-family: var(--title-font);
+            margin: 0;
+            color: var(--wood-brown);
+            text-align: center;
+            border-bottom: 2px solid var(--gold-accent);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: var(--washi-bg);
+            border: 2px solid var(--wood-brown);
+            padding: 8px;
+            cursor: pointer;
+            font-family: var(--ui-font);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--gold-accent);
+            color: white;
+        }
+
+        #volume-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            pointer-events: auto;
+            color: var(--gold-accent);
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--gold-accent);
+        }
+
+        input[type=range] {
+            cursor: pointer;
+            accent-color: var(--gold-accent);
+        }
+
+        #town-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            background-image: url('assets/town_bg.png');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+        }
+
+        #town-overlay-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 501;
+        }
+
+        #town-menu {
+            width: 450px;
+            z-index: 502;
+            position: relative;
+        }
+
+        #battle-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #555 0%, #000 100%);
+            display: none;
+            z-index: 400;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #battle-ui-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #battle-main-area {
+            position: relative;
+            top: -30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 420px;
+        }
+
+        #enemy-visual {
+            width: 380px;
+            height: 380px;
+            background: rgba(0, 0, 0, 0.3);
+            /* 白背景による透過時の幽霊現象を防ぐため黒系透過へ */
+            border: 3px solid var(--gold-accent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #enemy-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: brightness(2.2) contrast(1.2) drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
+        }
+
+        #transition-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 3000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+
+        #status-location {
+            font-size: 0.9em;
+            color: var(--gold-accent);
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+
+        #top-ui {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            pointer-events: none;
+            z-index: 2000;
+        }
+
+        #enemy-name-plate {
+            position: absolute;
+            top: -15px;
+            background: var(--blood-red);
+            color: white;
+            padding: 6px 30px;
+            font-family: var(--title-font);
+            border: 2px solid var(--gold-accent);
+            z-index: 1500;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #battle-commands {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        #status-window {
+            width: 280px;
+            pointer-events: auto;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+            font-weight: bold;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 8px;
+            background: #ccc;
+            border: 1px solid #000;
+            margin-top: 2px;
+            margin-bottom: 6px;
+        }
+
+        .bar {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        #hp-bar {
+            background: var(--blood-red);
+        }
+
+        #mp-bar {
+            background: #008;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 5px;
+            font-size: 0.95em;
+            color: var(--blood-red);
+        }
+
+        #minimap-container {
+            width: 150px;
+            height: 150px;
+            border: 3px solid var(--wood-brown);
+            pointer-events: auto;
+            background: #000;
+            position: relative;
+            margin-top: 50px;
+        }
+
+        #full-map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--washi-bg);
+        }
+
+        #full-map-canvas {
+            border: 2px solid var(--gold-accent);
+            background: #111;
+        }
+
+        #facility-modal,
+        #confirm-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 480px;
+            display: none;
+            z-index: 2100;
+        }
+
+        .item-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .town-option {
+            margin: 8px 0;
+            padding: 12px;
+            font-size: 1.1em;
+            display: block;
+            width: 100%;
+        }
+
+        #battle-dialogue-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 2500;
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 50px;
+            pointer-events: auto;
+        }
+
+        #battle-dialogue-box {
+            width: 600px;
+            background: rgba(10, 10, 10, 0.95);
+            border: 3px solid var(--gold-accent);
+            padding: 30px;
+            color: #fff;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+        }
+
+        #battle-dialogue-name {
+            position: absolute;
+            top: -25px;
+            left: 20px;
+            background: var(--blood-red);
+            padding: 5px 25px;
+            border: 2px solid var(--gold-accent);
+            font-family: var(--title-font);
+            font-size: 1.2em;
+        }
+
+        #battle-dialogue-text {
+            font-size: 1.4em;
+            line-height: 1.7;
+            min-height: 2.5em; /* 2行分の高さを確保 */
+        }
+
+        .click-prompt {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 0.8em;
+            color: var(--gold-accent);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* バーチャルコントローラーのボタン */
+        .controller-btn {
+            width: 75px;
+            height: 75px;
+            background: rgba(30, 30, 30, 0.75);
+            border: 2px solid var(--gold-accent);
+            border-radius: 10px;
+            color: #fff;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 5px 8px rgba(0,0,0,0.35);
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .controller-btn:active {
+            background: rgba(181, 142, 66, 0.9);
+            transform: scale(0.95);
+            border-color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <div id="transition-overlay"></div>
+        <div id="three-container"></div>
+        <div id="volume-control"><span>奏(音量)</span><input type="range" id="volume-slider" min="0" max="0.5" step="0.01"
+                value="0.15"></div>
+
+        <div id="ui-layer">
+            <div id="top-ui">
+                <div id="status-window" class="hud-panel">
+                    <h3 id="status-location">宿場町</h3>
+                    <div class="status-row"
+                        style="color: var(--gold-accent); font-weight: bold; border-bottom: 1px solid #ddd; margin-bottom: 5px;">
+                        <span>段位：</span><span id="level-text">1</span>
+                    </div>
+                    <div class="status-row"><span>体力</span><span id="hp-text">100/100</span></div>
+                    <div class="bar-container">
+                        <div id="hp-bar" class="bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="status-row"><span>気力</span><span id="mp-text">50/50</span></div>
+                    <div class="bar-container">
+                        <div id="mp-bar" class="bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="status-row" style="font-size: 0.85em; color: #666;">
+                        <span>功徳：</span><span id="exp-text">0 / 20</span>
+                    </div>
+                    <div class="stat-grid">
+                        <div>攻撃：<span id="stat-atk">15</span></div>
+                        <div>防御：<span id="stat-def">0</span></div>
+                    </div>
+                    <div id="equipment-area"
+                        style="margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--gold-accent); font-size: 0.9em;">
+                        <div class="status-row"><span>右腕：</span><span id="weapon-name">竹光</span></div>
+                        <div class="status-row"><span>胴体：</span><span id="armor-name">素浪人の着物</span></div>
+                        <div class="status-row" style="margin-top:5px; border-top: 1px dashed #aaa; padding-top:3px;">
+                            <span>所持：</span><span id="money-text">200</span> 文
+                        </div>
+                        <div id="yakumari-row" class="status-row" style="margin-top:5px; display:none;">
+                            <span>丸薬：</span><span id="item-yakumari-count">0</span>
+                            <button id="use-yakumari-btn" class="item-btn" onclick="useItem('yakumari')">使用</button>
+                        </div>
+                        <div id="myouyaku-row" class="status-row" style="display:none;">
+                            <span>妙薬：</span><span id="item-myouyaku-count">0</span>
+                            <button id="use-myouyaku-btn" class="item-btn" onclick="useItem('myouyaku')">使用</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="minimap-container"><canvas id="minimap-canvas" width="150" height="150"></canvas></div>
+            </div>
+            <div id="exploration-log" class="hud-panel"
+                style="height: 100px; width: 350px; overflow-y: hidden; display: flex; flex-direction: column-reverse; margin-left: auto; z-index: 2000;">
+                <div class="log-entry">闇を晴らせ。敵の気配を逃すな。</div>
+            </div>
+            <div id="town-overlay">
+                <div id="town-overlay-mask"></div>
+                <div id="town-menu" class="hud-panel">
+                    <h2>宿場町</h2>
+                    <button class="town-option" onclick="openFacility('magistrate')">奉行所へ行く</button>
+                    <button class="town-option" onclick="openFacility('inn')">宿屋で休む(20文)</button>
+                    <button class="town-option" onclick="openFacility('shop')">商店に寄る</button>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="town-option" style="background: #263238; color: #fff; margin: 8px 0;"
+                            onclick="openConfirm('冒険の記録を綴りますか？', saveGame)">記録を綴る</button>
+                        <button id="load-game-btn" class="town-option"
+                            style="background: #3e2723; color: #fff; margin: 8px 0;"
+                            onclick="openConfirm('以前の記憶を呼び覚ましますか？', loadGame)">以前の旅から</button>
+                    </div>
+                    <button id="enter-dungeon-btn" class="town-option"
+                        style="background: var(--blood-red); color: white;"
+                        onclick="showDungeonSelect()">討伐へ向かう</button>
+                    <button class="town-option" style="background: #4a3c31; color: #fff; margin-top: 10px; font-size: 0.9em; padding: 6px;"
+                        onclick="openFacility('credit')">製作者一覧 (クレジット)</button>
+                </div>
+            </div>
+
+            <div id="dungeon-select-modal" class="hud-panel"
+                style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:2000; min-width:300px;">
+                <h2>―― 討伐地選択 ――</h2>
+                <button class="town-option" onclick="enterDungeon('town')">1. 治安の悪い下町</button>
+                <button id="forest-select-btn" class="town-option" onclick="enterDungeon('forest')"
+                    style="display:none; color: #2e7d32; border-color: #2e7d32;">2. 野盗のすむ森</button>
+                <button id="house-select-btn" class="town-option" onclick="enterDungeon('house')"
+                    style="display:none; color: #5d4037; border-color: #5d4037;">3. 妖怪屋敷</button>
+                <button id="castle-select-btn" class="town-option" onclick="enterDungeon('castle')"
+                    style="display:none; color: #455a64; border-color: #455a64;">4. 鬼の住む廃城</button>
+                <button id="abyss-select-btn" class="town-option" onclick="enterDungeon('abyss')"
+                    style="display:none; color: #311b92; border-color: #311b92;">5. 奈落洞窟</button>
+                <button class="town-option" style="background:#666; color:white;"
+                    onclick="closeDungeonSelect()">戻る</button>
+            </div>
+
+            <!-- 画面左下のバーチャル操作パネル -->
+            <div id="virtual-controller" style="display: none; position: absolute; bottom: 25px; left: 25px; z-index: 2500; pointer-events: auto;">
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 245px;">
+                    <!-- 「前」ボタン (地図と同じ横長245px) -->
+                    <button class="controller-btn" style="width: 245px; height: 68px; background: rgba(45, 45, 45, 0.85);" onmousedown="movePlayer('w')" ontouchstart="movePlayer('w'); event.preventDefault();">前 (前進)</button>
+                    
+                    <!-- 「左」「後」「右」ボタン -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 75px); gap: 10px;">
+                        <button class="controller-btn" onmousedown="movePlayer('a')" ontouchstart="movePlayer('a'); event.preventDefault();">左</button>
+                        <button class="controller-btn" onmousedown="movePlayer('s')" ontouchstart="movePlayer('s'); event.preventDefault();">後</button>
+                        <button class="controller-btn" onmousedown="movePlayer('d')" ontouchstart="movePlayer('d'); event.preventDefault();">右</button>
+                    </div>
+                    
+                    <!-- 「地図を開く」ボタン -->
+                    <button id="map-btn" class="controller-btn" 
+                        style="width: 245px; height: 68px; background: rgba(181, 142, 66, 0.7); border: 2px solid var(--gold-accent);"
+                        onmousedown="showMap(true)" ontouchstart="showMap(true); event.preventDefault();"
+                        onmouseup="showMap(false)" ontouchend="showMap(false); event.preventDefault();"
+                        onmouseleave="showMap(false)">
+                        地図を開く
+                    </button>
+                </div>
+            </div>
+
+            <div id="battle-overlay" style="display:none;">
+                <div id="battle-ui-container">
+                    <div id="battle-main-area">
+                        <div id="enemy-name-plate">敵の名前</div>
+                        <div id="enemy-visual"><img id="enemy-img" src="" alt="敵"></div>
+                        <div id="battle-commands" class="hud-panel">
+                            <button class="town-option" onclick="battleAction('attack')">斬る (攻撃)</button>
+                            <button class="town-option" onclick="battleAction('defend')">凌ぐ (防御)</button>
+                            <button class="town-option" onclick="battleAction('skill')">秘技 (気力体力10)</button>
+                            <button class="town-option" onclick="battleAction('run')">逃走</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ボス台詞演出用レイヤー -->
+            <div id="battle-dialogue-overlay">
+                <div id="battle-dialogue-box" class="hud-panel">
+                    <div id="battle-dialogue-name">名前</div>
+                    <div id="battle-dialogue-text">台詞がここに入ります。</div>
+                    <div class="click-prompt">▼ クリックで次へ</div>
+                </div>
+            </div>
+
+            <div id="full-map-overlay">
+                <h3 id="full-map-title">―― 治安の悪い下町 地図 ――</h3>
+                <canvas id="full-map-canvas" width="400" height="400"></canvas>
+                <p style="margin-top:10px;">[Spaceキーを離して閉じる]</p>
+                <small>※赤印:現在地 / ⌂:宿場町</small>
+            </div>
+
+            <div id="facility-modal" class="hud-panel">
+                <h2 id="modal-title">施設</h2>
+                <p id="modal-text">...</p>
+                <div id="shop-ui" style="display:none;">
+                    <div class="item-list">
+                        <button class="shop-initial" onclick="buy('sword1')">古びた打刀
+                            (50文)<br><small>ATK+15</small></button>
+                        <button class="shop-initial" onclick="buy('sword2')">手入れされた刀
+                            (150文)<br><small>ATK+40</small></button>
+                        <button class="shop-initial" onclick="buy('sword3')">名入りの脇差
+                            (400文)<br><small>ATK+85</small></button>
+                        <button class="shop-initial" onclick="buy('armor1')">使い古しの腹巻
+                            (40文)<br><small>DEF+5</small></button>
+                        <button class="shop-initial" onclick="buy('armor2')">厚手の革具足
+                            (120文)<br><small>DEF+10</small></button>
+                        <button class="shop-initial" onclick="buy('armor3')    ">鉄錆の胸当て
+                            (350文)<br><small>DEF+15</small></button>
+                        <button id="shop-armor4" style="display:none;" onclick="buy('armor4')">当世具足
+                            (850文)<br><small>DEF+20</small></button>
+                        <button id="shop-armor5" style="display:none;" onclick="buy('armor5')">名家の当世具足
+                            (1800文)<br><small>DEF+25</small></button>
+                        <button id="shop-armor6" style="display:none;" onclick="buy('armor6')">呪除けの長着
+                            (4200文)<br><small>DEF+30</small></button>
+                        <button id="shop-armor7" style="display:none;" onclick="buy('armor7')">神職の装束
+                            (11000文)<br><small>DEF+35</small></button>
+                    </div>
+                    <div id="shop-sword-extra" class="item-list"
+                        style="display:none; margin-top:10px; border-top:1px solid var(--gold-accent); padding-top:10px;">
+                        <button id="shop-sword4" onclick="buy('sword4')">業物・蜻蛉切
+                            (1200文)<br><small>ATK+160</small></button>
+                        <button id="shop-sword5" onclick="buy('sword5')">名工の打刀
+                            (2500文)<br><small>ATK+280</small></button>
+                        <button id="shop-sword6" style="display:none;" onclick="buy('sword6')">退魔の太刀
+                            (5800文)<br><small>ATK+420</small></button>
+                        <button id="shop-sword7" style="display:none;" onclick="buy('sword7')">破邪の御神刀
+                            (13000文)<br><small>ATK+750</small></button>
+                        <button id="shop-sword8" style="display:none;" onclick="buy('sword8')">妖刀・村正
+                            (25000文)<br><small>ATK+1200</small></button>
+                        <button id="shop-sword9" style="display:none;" onclick="buy('sword9')">神刀・天叢雲
+                            (50000文)<br><small>ATK+2200</small></button>
+                        <button id="shop-sword10" style="display:none;" onclick="buy('sword10')">極・修羅の太刀
+                            (120000文)<br><small>ATK+5000</small></button>
+                    </div>
+                    <div id="shop-armor-castle" class="item-list"
+                        style="display:none; margin-top:10px; border-top:1px solid var(--gold-accent); padding-top:10px;">
+                        <button id="shop-armor8" onclick="buy('armor8')">白銀の陣羽織
+                            (22000文)<br><small>DEF+40</small></button>
+                        <button id="shop-armor9" onclick="buy('armor9')">黄金の甲冑
+                            (45000文)<br><small>DEF+45</small></button>
+                        <button id="shop-armor10" onclick="buy('armor10')">龍神の鱗具足
+                            (100000文)<br><small>DEF+50</small></button>
+                    </div>
+                    <div id="shop-items" class="item-list"
+                        style="margin-top:10px; border-top:1px solid var(--gold-accent); padding-top:10px;">
+                        <button id="shop-yakumari" style="display:none;" onclick="buy('yakumari')">回復の丸薬
+                            (1.5万文)<br><small>HP100回復(最大20)</small></button>
+                        <button id="shop-myouyaku" style="display:none;" onclick="buy('myouyaku')">大回復の妙薬
+                            (10万文)<br><small>HP1000回復(最大20)</small></button>
+                    </div>
+                </div>
+                <div id="inn-ui" style="display:none;"><button class="town-option" onclick="rest()">一晩泊まる (20文)</button>
+                </div>
+                <button class="town-option" style="margin-top:15px; background:#ccc;" onclick="closeModal()">戻る</button>
+            </div>
+
+            <div id="confirm-modal" class="hud-panel">
+                <h2 id="confirm-msg">宿場町へ戻りますか？</h2>
+                <div class="btn-row" style="display: flex; justify-content: space-around; margin-top: 20px;">
+                    <button id="confirm-yes-btn" class="town-option"
+                        style="width:140px; background:var(--gold-accent);">はい</button>
+                    <button class="town-option" style="width:140px;" onclick="closeConfirm()">いいえ</button>
+                </div>
+            </div>
+
+            <!-- ゲームクリア演出用オーバーレイは削除されました -->
+        </div>
+
+        <script
+            type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } } </script>
+        <script type="module">
+            import * as THREE from 'three';
+
+            // --- ボス戦セリフデータ ---
+            const bossDialogues = {
+                'shitamachi': {
+                    name: '下町のボス',
+                    start: '「ヒヒッ、お役人の回し者か？ 最近は妙な術を授かってな……俺たちの刃は、以前とは一味違うぜ！」',
+                    end: '「ぐふっ……あの陰陽師め、もっとマシな力をよこしやがれ……」'
+                },
+                'forest': {
+                    name: '野盗団の首領',
+                    start: '「止まれ！ ここから先は通さん。……ほう、その刀、陰陽師様が言っていた獲物か。死んで置いていけ！」',
+                    end: '「バカな……伝説の剣士だとでもいうのか……ガハッ！」'
+                },
+                'house': {
+                    name: '妖怪屋敷の化け狐',
+                    start: '「クスクス……迷い込んだか、哀れな人間よ。我が主、陰陽師様が求める『生贄』にちょうど良いわ……」',
+                    end: '「術が……解ける……。私は何を……コン……」'
+                },
+                'castle': {
+                    name: '黒鬼 (城主)',
+                    start: '「……我が眠りを妨げる者は誰ぞ。陰陽師に命じられた『門番』の役目、果たさせてもらう。貴様の血で城を染めてやろう！」',
+                    end: '「これで……ようやく休息が訪れるのか……。この奥、深淵にて貴様を待つのは……」'
+                },
+                'onmyoji': {
+                    name: '邪悪な陰陽師',
+                    start: '「ククク……よくぞここまで辿り着いた。だが遅かったな。封印は既に解かれた。あとはイザナミ様の降臨を待つのみよ！」',
+                    end: '「バカなっ……この私が敗れるだと！？ ……だが、もう止まらぬ。あの方の怒りが、江戸を……世界を飲み込むのだ……アッハハハ！」'
+                },
+                'izanami': {
+                    name: 'イザナミ',
+                    start: '「………………憎い…………現世の光、全てを……闇へ………………」',
+                    end: '「あああぁ……光が……潰える……。神の……裁きを………………受け入れ…………よ…………」'
+                },
+                'izanami_final': {
+                    name: 'よみがえりしイザナミ',
+                    start: '「我など…………死ぬ…………。全てを……無へ………………」',
+                    end: '「あたたかい………………光………………。私は………………やっと…………帰れる………………」'
+                }
+            };
+
+            // 台詞オーバーレイ表示関数
+            const displayBossDialogue = (dialogueData, isEnd = false) => {
+                return new Promise(resolve => {
+                    const overlay = document.getElementById('battle-dialogue-overlay');
+                    const nameEl = document.getElementById('battle-dialogue-name');
+                    const textEl = document.getElementById('battle-dialogue-text');
+                    
+                    nameEl.innerText = dialogueData.name;
+                    textEl.innerText = '';
+                    overlay.style.display = 'flex';
+                    
+                    const text = isEnd ? dialogueData.end : dialogueData.start;
+                    let i = 0;
+                    
+                    // 一文字ずつ表示する演出
+                    const typeInterval = setInterval(() => {
+                        textEl.innerText += text.charAt(i);
+                        i++;
+                        if (i >= text.length) {
+                            clearInterval(typeInterval);
+                            // クリックで閉じる待機
+                            const waitClick = () => {
+                                overlay.style.display = 'none';
+                                overlay.removeEventListener('click', waitClick);
+                                resolve();
+                            };
+                            overlay.addEventListener('click', waitClick);
+                        }
+                    }, 50); // 文字表示の速度
+                });
+            };
+
+            // --- 高度な音響エンジン ---
+            class AudioManager {
+                constructor() {
+                    this.ctx = null; this.masterGain = null; this.volume = 0.15;
+                    this.bgms = {}; this.currentBGMType = null;
+                    this.bgmPaths = {
+                        'town': 'assets/bgm_town.mp3',
+                        'dungeon': 'assets/bgm_dungeon1.mp3',
+                        'battle': 'assets/bgm_battle1.mp3',
+                        'boss': 'assets/bgm_battle2.mp3',
+                        'forest': 'assets/bgm_dungeon2.mp3',
+                        'house': 'assets/bgm_dungeon3.mp3',
+                        'castle': 'assets/bgm_dungeon4.mp3',
+                        'abyss': 'assets/bgm_dungeon5.mp3',
+                        'battle3': 'assets/bgm_battle3.mp3',
+                        'battle4': 'assets/bgm_battle4.mp3'
+                    };
+                }
+                init() {
+                    if (this.ctx) {
+                        if (this.ctx.state === 'suspended') this.ctx.resume();
+                        return;
+                    }
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.connect(this.ctx.destination);
+                    this.updateVolume(this.volume);
+                }
+                updateVolume(v) {
+                    this.volume = v;
+                    if (this.masterGain) this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1);
+                    Object.values(this.bgms).forEach(audio => { audio.volume = v; });
+                }
+                playKoto(freq, duration, vol = 0.3, offset = 0, attack = 0.05) {
+                    this.init();
+                    const osc = this.ctx.createOscillator(); const osc2 = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth'; osc2.type = 'sine'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime + offset); osc2.frequency.setValueAtTime(freq, this.ctx.currentTime + offset);
+                    gain.gain.setValueAtTime(0, this.ctx.currentTime + offset);
+                    gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + offset + attack);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + offset + duration);
+                    osc.connect(gain); osc2.connect(gain); gain.connect(this.masterGain); osc.start(this.ctx.currentTime + offset); osc2.start(this.ctx.currentTime + offset);
+                    osc.stop(this.ctx.currentTime + offset + duration); osc2.stop(this.ctx.currentTime + offset + duration);
+                }
+                playTaiko(freq, duration, vol = 0.6, offset = 0) {
+                    this.init();
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = 'square'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime + offset); osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + offset + duration * 0.5);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime + offset); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + offset + duration);
+                    osc.connect(gain); gain.connect(this.masterGain); osc.start(this.ctx.currentTime + offset); osc.stop(this.ctx.currentTime + offset + duration);
+                }
+                playBGM(type) {
+                    this.init();
+                    // 同じタイプでも、再生されていなければ（pausedなら）再生を試みる
+                    if (this.currentBGMType === type && this.bgms[type] && !this.bgms[type].paused) return;
+
+                    if (this.currentBGMType && this.bgms[this.currentBGMType] && this.currentBGMType !== type) {
+                        this.bgms[this.currentBGMType].pause();
+                        this.bgms[this.currentBGMType].currentTime = 0;
+                    }
+                    this.currentBGMType = type;
+                    if (!this.bgms[type]) {
+                        this.bgms[type] = new Audio(this.bgmPaths[type]);
+                        this.bgms[type].loop = true;
+                        this.bgms[type].volume = this.volume;
+                    }
+                    this.bgms[type].play().catch(e => console.log("BGM Play Error:", e));
+                }
+                playSE(type) {
+                    if (type === 'attack') this.playTaiko(180, 0.1, 0.4);
+                    else if (type === 'damage') this.playTaiko(80, 0.4, 0.7);
+                    else if (type === 'levelup') {
+                        // 昇段ファンファーレ: 煌びやかな琴の速弾き
+                        this.init();
+                        [523, 659, 783, 1046].forEach((f, i) => this.playKoto(f, 0.5, 0.5, i * 0.1, 0.01));
+                    }
+                    else if (type === 'stairs') {
+                        // 階段を上る音
+                        this.init();
+                        for (let i = 0; i < 4; i++) {
+                            this.playTaiko(60, 0.2, 0.3, i * 0.25);
+                        }
+                    }
+                    else if (type === 'teleport') {
+                        // 転移の音
+                        this.init();
+                        const now = this.ctx.currentTime;
+                        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                        osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(800, now + 1);
+                        gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.5); gain.gain.linearRampToValueAtTime(0, now + 1);
+                        osc.connect(gain); gain.connect(this.masterGain); osc.start(now); osc.stop(now + 1);
+                    }
+                    else if (type === 'kill') {
+                        // 撃破音: 低く重厚な断末魔の響き
+                        this.playTaiko(50, 0.8, 1.0);
+                        this.playTaiko(40, 1.0, 0.6, 0.1);
+                        // 低く沈み込むような音
+                        this.init();
+                        const now = this.ctx.currentTime;
+                        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(30, now + 1);
+                        gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
+                        osc.connect(gain); gain.connect(this.masterGain); osc.start(now); osc.stop(now + 1);
+                    }
+                    else if (type === 'rest') {
+                        // 宿屋の回復音: 琴のアルペジオで癒し・休息の演出
+                        this.init();
+                        const notes = [329, 392, 523, 659]; // E4, G4, C5, E5
+                        notes.forEach((f, i) => this.playKoto(f, 0.8, 0.4, i * 0.15, 0.08));
+                    }
+                    else if (type === 'buy') {
+                        // チャリンというお支払い音 (金属質なコインの音)
+                        this.init();
+                        const now = this.ctx.currentTime;
+                        const osc1 = this.ctx.createOscillator();
+                        const osc2 = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(987.77, now); // B5
+                        osc1.frequency.exponentialRampToValueAtTime(1567.98, now + 0.15); // G6
+                        
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(1318.51, now); // E6
+                        osc2.frequency.exponentialRampToValueAtTime(2093.00, now + 0.15); // C7
+                        
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                        
+                        osc1.connect(gain);
+                        osc2.connect(gain);
+                        gain.connect(this.masterGain);
+                        
+                        osc1.start(now);
+                        osc2.start(now);
+                        osc1.stop(now + 0.15);
+                        osc2.stop(now + 0.15);
+                    }
+                }
+            }
+            const audio = new AudioManager();
+            document.getElementById('volume-slider').addEventListener('input', (e) => audio.updateVolume(parseFloat(e.target.value)));
+
+            const GameState = { TOWN: 0, DUNGEON: 1, BATTLE: 2 };
+            let currentGameState = GameState.TOWN;
+            let enemy = null;
+            let battleBusy = false;
+            // 妖怪屋敷の中ボス（身代わり狐）の生存フラグ（町に戻ると復活）
+            let houseMidBosses = { h1_1: true, h1_2: true, h2_1: true, h2_2: true, h2_3: true };
+
+            let player = {
+                hp: 100, maxHp: 100, mp: 50, maxMp: 50, money: 200, x: 1, z: 1, dir: 0,
+                weapon: "竹光", armor: "素浪人の着物", atk: 15, def: 0,
+                lv: 1, exp: 0, nextExp: 20,
+                targetPos: new THREE.Vector3(4, 1.6, 4), targetRot: 0,
+                currentDungeonId: 'town',
+                items: { yakumari: 0, myouyaku: 0 }
+            };
+
+            const MAP_TOWN = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+                [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+
+            const MAP_FOREST = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1],
+                [1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1],
+                [1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1],
+                [1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+
+            // 妖怪屋敷 (2層) - 2:上り階段, 3:下り階段, 0:床, 1:壁
+            const MAP_HOUSE_1F = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2, 1],
+                [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            const MAP_HOUSE_2F = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 3, 1],
+                [1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+                [1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                [1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+                [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            const MAP_CASTLE_1F = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            const MAP_CASTLE_2F = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1],
+                [1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+                [1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            const MAP_CASTLE_3F = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 3, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            const MAP_ABYSS = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+
+            let MAP_ABYSS_B1 = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
+                [1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
+                [1, 0, 1, 2, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            let MAP_ABYSS_B2 = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1],
+                [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 3, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+                [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+            let MAP_ABYSS_B3 = [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 3, 1],
+                [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                [1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+                [1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+                [1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1],
+                [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1],
+                [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1],
+                [1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+                [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+                [1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+                [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            ];
+
+            let MAP = MAP_TOWN;
+            let currentFloor = 1;
+            let visitedMaps = {
+                'town': { 1: Array(16).fill().map(() => Array(16).fill(false)) },
+                'forest': { 1: Array(16).fill().map(() => Array(16).fill(false)) },
+                'house': { 1: Array(16).fill().map(() => Array(16).fill(false)), 2: Array(16).fill().map(() => Array(16).fill(false)) },
+                'castle': { 1: Array(24).fill().map(() => Array(24).fill(false)), 2: Array(24).fill().map(() => Array(24).fill(false)), 3: Array(24).fill().map(() => Array(24).fill(false)) },
+                'abyss': { 1: Array(25).fill().map(() => Array(25).fill(false)), 2: Array(25).fill().map(() => Array(25).fill(false)), 3: Array(25).fill().map(() => Array(25).fill(false)) }
+            };
+            let visited = visitedMaps['town'][1];
+            const GS = 4;
+
+            function updateMapping() {
+                for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+                    const nx = player.x + dx; const nz = player.z + dz;
+                    if (nx >= 0 && nx < MAP[0].length && nz >= 0 && nz < MAP.length) visited[nz][nx] = true;
+                }
+            }
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020202); scene.fog = new THREE.FogExp2(0x020202, 0.15);
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight); document.getElementById('three-container').appendChild(renderer.domElement);
+            const torch = new THREE.PointLight(0xffcc88, 25, 40); camera.add(torch); scene.add(camera);
+            scene.add(new THREE.AmbientLight(0x444444));
+
+            const dungeonModelGroup = new THREE.Group(); scene.add(dungeonModelGroup);
+            const bossEntity = new THREE.Mesh(new THREE.SphereGeometry(1.7, 32, 32), new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 0.1, metalness: 0.9 }));
+            bossEntity.scale.set(1, 1.4, 1);
+            const exitMarker = new THREE.Group(); scene.add(exitMarker);
+            const planeGeo = new THREE.PlaneGeometry(GS * 0.9, GS * 0.9);
+            const exitPlane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide }));
+            exitPlane.rotation.x = -Math.PI / 2; exitPlane.position.y = 0.05; exitMarker.add(exitPlane);
+
+            function tex(c, w, isWall) {
+                const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const ctx = cv.getContext('2d');
+                ctx.fillStyle = c; ctx.fillRect(0, 0, 128, 128); ctx.strokeStyle = w; ctx.lineWidth = 4; ctx.strokeRect(0, 0, 128, 128);
+                if (isWall) { ctx.beginPath(); ctx.moveTo(64, 0); ctx.lineTo(64, 128); ctx.moveTo(0, 64); ctx.lineTo(128, 64); ctx.stroke(); }
+                return new THREE.CanvasTexture(cv);
+            }
+
+            function loadMap() {
+                while (dungeonModelGroup.children.length) dungeonModelGroup.remove(dungeonModelGroup.children[0]);
+                let wallColor, floorColor, wallBorder, floorBorder;
+                if (player.currentDungeonId === 'town') {
+                    wallColor = '#1a1a1a'; floorColor = '#0a0a0a'; wallBorder = '#000'; floorBorder = '#050505';
+                } else if (player.currentDungeonId === 'forest') {
+                    wallColor = '#2e4a2e'; floorColor = '#1a2a1a'; wallBorder = '#1a2a1a'; floorBorder = '#101a10';
+                } else if (player.currentDungeonId === 'house') {
+                    wallColor = '#5d4037'; floorColor = '#3e2723'; wallBorder = '#4e342e'; floorBorder = '#2d1a1a';
+                } else if (player.currentDungeonId === 'castle') {
+                    wallColor = '#455a64'; floorColor = '#263238'; wallBorder = '#37474f'; floorBorder = '#1a2327';
+                } else if (player.currentDungeonId === 'abyss') {
+                    wallColor = '#311b92'; floorColor = '#1a0f4d'; wallBorder = '#210f6d'; floorBorder = '#0f0a2d';
+                }
+                const wMat = new THREE.MeshStandardMaterial({ map: tex(wallColor, wallBorder, true) });
+                const fMat = new THREE.MeshStandardMaterial({ map: tex(floorColor, floorBorder, false) });
+                const sMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 }); // 階段(茶色)
+
+                const mapSize = MAP.length;
+                for (let z = 0; z < mapSize; z++) for (let x = 0; x < mapSize; x++) {
+                    const type = MAP[z][x];
+                    const f = new THREE.Mesh(new THREE.PlaneGeometry(GS, GS), fMat); f.rotation.x = -Math.PI / 2; f.position.set(x * GS, 0, z * GS); dungeonModelGroup.add(f);
+                    if (type === 1) { const w = new THREE.Mesh(new THREE.BoxGeometry(GS, GS, GS), wMat); w.position.set(x * GS, GS / 2, z * GS); dungeonModelGroup.add(w); }
+                    else if (type === 2 || type === 3) {
+                        const s = new THREE.Mesh(new THREE.BoxGeometry(GS, GS * 0.2, GS), sMat); s.position.set(x * GS, 0.1, z * GS); dungeonModelGroup.add(s);
+                    }
+                }
+                if (player.currentDungeonId === 'town') {
+                    if (isTownBossAlive) { bossEntity.position.set(14 * GS, 2.3, 14 * GS); dungeonModelGroup.add(bossEntity); }
+                } else if (player.currentDungeonId === 'forest') {
+                    if (isForestBossAlive) { bossEntity.position.set(1 * GS, 2.3, 14 * GS); dungeonModelGroup.add(bossEntity); }
+                } else if (player.currentDungeonId === 'house' && currentFloor === 2) {
+                    if (isHouseBossAlive) { bossEntity.position.set(1 * GS, 2.3, 13 * GS); dungeonModelGroup.add(bossEntity); }
+                } else if (player.currentDungeonId === 'castle' && currentFloor === 3) {
+                    if (isCastleBossAlive) { bossEntity.position.set(11 * GS, 2.3, 8 * GS); dungeonModelGroup.add(bossEntity); }
+                } else if (player.currentDungeonId === 'abyss') {
+                    if (currentFloor === 2 && isAbyssMidBossAlive) {
+                        bossEntity.position.set(23 * GS, 2.3, 2 * GS); dungeonModelGroup.add(bossEntity);
+                    } else if (currentFloor === 3) {
+                        if (isAbyssBoss1Alive || isAbyssBoss2Alive) {
+                            bossEntity.position.set(12 * GS, 2.3, 1 * GS); dungeonModelGroup.add(bossEntity);
+                        }
+                    } else if (currentFloor === 1 && !isAbyssBoss2Alive && isAbyssFinalBossAlive) {
+                        bossEntity.position.set(12 * GS, 2.3, 2 * GS); dungeonModelGroup.add(bossEntity);
+                    }
+                }
+                // 中ボス（身代わり狐）の描画
+                if (player.currentDungeonId === 'house') {
+                    const midPos = currentFloor === 1 ? [{ x: 1, z: 14, id: 'h1_1' }, { x: 14, z: 14, id: 'h1_2' }]
+                        : [{ x: 2, z: 1, id: 'h2_1' }, { x: 10, z: 8, id: 'h2_2' }, { x: 14, z: 13, id: 'h2_3' }];
+                    midPos.forEach(p => {
+                        if (houseMidBosses[p.id]) {
+                            const sphere = bossEntity.clone();
+                            sphere.position.set(p.x * GS, 2.3, p.z * GS);
+                            dungeonModelGroup.add(sphere);
+                        }
+                    });
+                }
+                if (player.currentDungeonId === 'castle') {
+                    if (currentFloor === 1 && isCastle1FMidBossAlive) {
+                        const sphere = bossEntity.clone(); sphere.position.set(1 * GS, 2.3, 21 * GS); dungeonModelGroup.add(sphere);
+                    } else if (currentFloor === 2 && isCastle2FMidBossAlive) {
+                        const sphere = bossEntity.clone(); sphere.position.set(12 * GS, 2.3, 14 * GS); dungeonModelGroup.add(sphere);
+                    }
+                }
+                if (currentFloor === 1) {
+                    let ex = 1;
+                    if (player.currentDungeonId === 'forest') ex = 7;
+                    else if (player.currentDungeonId === 'castle') ex = 11;
+                    else if (player.currentDungeonId === 'abyss') ex = 12;
+                    exitMarker.position.set(ex * GS, 0, GS); dungeonModelGroup.add(exitMarker);
+                }
+                // 廃城3Fのショートカット（1F入口へ）
+                if (player.currentDungeonId === 'castle' && currentFloor === 3) {
+                    const shortcutMarker = exitMarker.clone();
+                    shortcutMarker.position.set(11 * GS, 0, 7 * GS);
+                    dungeonModelGroup.add(shortcutMarker);
+                }
+                updateMapping();
+                updateUI();
+            }
+
+            window.useItem = async (itemId) => {
+                if (player.items[itemId] <= 0 || player.hp >= player.maxHp) return;
+                const items = { yakumari: 100, myouyaku: 1000 };
+                const heal = items[itemId];
+                player.hp = Math.min(player.maxHp, player.hp + heal);
+                player.items[itemId]--;
+                logExploration(`${itemId === 'yakumari' ? '丸薬' : '妙薬'}を使用した。体力が${heal}回復。`);
+                updateUI();
+
+                if (currentGameState === GameState.DUNGEON && document.getElementById('battle-overlay').style.display === 'block') {
+                    battleBusy = true;
+                    await enemyTurn();
+                    battleBusy = false;
+                }
+            };
+
+            let hasSeenClearDialogue = false;
+            window.returnToTown = () => {
+                document.getElementById('confirm-modal').style.display = 'none';
+                player.currentDungeonId = 'town';
+                currentFloor = 1;
+                audio.playBGM('town');
+                
+                // 3D画面を非表示にし、町メニューを表示
+                document.getElementById('three-container').style.display = 'none';
+                document.getElementById('minimap-container').style.display = 'none';
+                document.getElementById('town-overlay').style.display = 'flex';
+                currentGameState = GameState.TOWN;
+                
+                if (hasPlayerClearedGame && !hasSeenClearDialogue) {
+                    openFacility('magistrate');
+                    hasSeenClearDialogue = true;
+                }
+                
+                updateUI();
+            };
+
+            window.openFacility = (f) => {
+                const t = document.getElementById('modal-title'); const tx = document.getElementById('modal-text'); const i = document.getElementById('inn-ui'); const s = document.getElementById('shop-ui');
+                t.innerText = ""; tx.innerText = ""; i.style.display = 'none'; s.style.display = 'none';
+                document.getElementById('facility-modal').style.display = 'block';
+                if (f === 'magistrate') {
+                    t.innerText = "奉行所";
+                    if (hasPlayerClearedGame) {
+                        tx.innerText = "「おお、戻られたか！ 聞いたぞ……貴殿の活躍により、あの邪悪な陰陽師が奈落の底へ消え、呼び出された古の神イザナミもまた、黄泉の国へと還られたということをな。\n江戸を包んでいた不穏な影は霧散し、民も安心して夜を明かせるようになった。八百万の神々も、貴殿の正しき行いを見守っておられたに違いない。\n邪悪なる野望を打ち砕き、この地に真の平和を呼び戻してくれたこと、江戸を代表して心より感謝いたす。\n……ゲームクリア、本当におめでとうございます！」";
+                    } else if (isTownBossAlive) {
+                        tx.innerText = "「最近、下町の治安が一段と悪化しておる。首領を名乗る大物を討ち取って参れ。」";
+                    } else if (isForestBossAlive) {
+                        tx.innerText = "「下町の平和を取り戻した功績、見事なり。しかし、近郊の森に野盗共が根城を築いたとの噂がある。次は『野盗のすむ森』を調査せよ。」";
+                    } else if (isHouseBossAlive) {
+                        tx.innerText = "「野盗の森を平定したか。見事である。しかし、最近、郊外の屋敷から不気味な気配が漂っておる。『妖怪屋敷』の調査を頼む。」";
+                    } else if (isCastleBossAlive) {
+                        tx.innerText = "「妖怪屋敷の怪異を鎮めたか。流石である。だが、遠くの山にそびえる『鬼の住む廃城』から邪悪な気が満ちている。その調査を命ずる。」";
+                    } else if (isAbyssBossAlive) {
+                        tx.innerText = "「鬼の住む廃城の調査、大儀であった。しかし、その奥底に『奈落洞窟』と呼ばれる深淵があるという。そこから湧き出る闇の根源を断て。」";
+                    } else {
+                        tx.innerText = "「全ての脅威を退けたか。これほどの功績、言葉もない。しばらくは平和が続くだろう。ゆっくり休むがよい。」";
+                    }
+                }
+                if (f === 'inn') { t.innerText = "宿屋"; tx.innerText = "「20文で休息を」"; i.style.display = 'block'; }
+                if (f === 'credit') {
+                    t.innerText = "製作者一覧 (クレジット)";
+                    tx.innerHTML = "<div style='text-align: left; line-height: 1.6; font-size: 0.95em; color: var(--sumi-black); padding: 10px; border: 1px dashed var(--gold-accent); background: rgba(255,255,255,0.5);'>" +
+                                   "<strong>制作：</strong>エクスプロード<br>" +
+                                   "<strong>プログラミング：</strong>Antigravity (gemini)<br>" +
+                                   "<strong>イラスト：</strong>nanobanana (生成AI)<br>" +
+                                   "<strong>BGM：</strong>stableaudio (生成AI)<br><br>" +
+                                   "<strong style='font-size:1.05em;'>破邪ノ剣閃・迷宮伝（はじゃのけんせん・めいきゅうでん）</strong><br>" +
+                                   "本作を遊んでいただきありがとうございます。<br>" +
+                                   "Antigravityを用いて練習用に作ったダンジョンRPGゲームです。<br>" +
+                                   "あっさり遊べるものとなっており楽しんでいただけると嬉しいです。<br><br>" +
+                                   "<span style='color: var(--blood-red); font-weight: bold;'>【ご注意】</span><br>" +
+                                   "<small style='color: var(--blood-red);'>※本ゲームの動画配信投稿等は許可しますが収益利用を禁じます。</small>" +
+                                   "</div>";
+                }
+                if (f === 'shop') {
+                    t.innerText = "商店"; s.style.display = 'block';
+                    const initialItems = document.querySelectorAll('.shop-initial');
+                    initialItems.forEach(el => el.style.display = 'none');
+                    document.getElementById('shop-sword-extra').style.display = 'grid';
+                    document.getElementById('shop-armor-castle').style.display = 'grid';
+                    const allSwords = [4, 5, 6, 7, 8, 9, 10].map(n => document.getElementById(`shop-sword${n}`));
+                    const allArmors = [4, 5, 6, 7, 8, 9, 10].map(n => document.getElementById(`shop-armor${n}`));
+                    [...allSwords, ...allArmors].forEach(el => { if (el) el.style.display = 'none'; });
+
+                    if (!isCastleBossAlive) {
+                        [8, 9, 10].forEach(n => { document.getElementById(`shop-sword${n}`).style.display = 'block'; document.getElementById(`shop-armor${n}`).style.display = 'block'; });
+                        document.getElementById('shop-yakumari').style.display = 'block';
+                        document.getElementById('shop-myouyaku').style.display = 'block';
+                    } else if (!isHouseBossAlive) {
+                        [7, 8, 9].forEach(n => { document.getElementById(`shop-sword${n}`).style.display = 'block'; document.getElementById(`shop-armor${n}`).style.display = 'block'; });
+                        document.getElementById('shop-yakumari').style.display = 'block';
+                        document.getElementById('shop-myouyaku').style.display = 'none';
+                    } else if (!isForestBossAlive) {
+                        [4, 5, 6, 7].forEach(n => { document.getElementById(`shop-sword${n}`).style.display = 'block'; document.getElementById(`shop-armor${n}`).style.display = 'block'; });
+                        document.getElementById('shop-yakumari').style.display = 'none';
+                        document.getElementById('shop-myouyaku').style.display = 'none';
+                    } else if (!isTownBossAlive) {
+                        initialItems.forEach(el => el.style.display = 'block');
+                        [4, 5].forEach(n => { document.getElementById(`shop-sword${n}`).style.display = 'block'; document.getElementById(`shop-armor${n}`).style.display = 'block'; });
+                        document.getElementById('shop-yakumari').style.display = 'none';
+                        document.getElementById('shop-myouyaku').style.display = 'none';
+                    } else {
+                        initialItems.forEach(el => el.style.display = 'block');
+                        document.getElementById('shop-sword-extra').style.display = 'none';
+                        document.getElementById('shop-armor-castle').style.display = 'none';
+                        document.getElementById('shop-yakumari').style.display = 'none';
+                        document.getElementById('shop-myouyaku').style.display = 'none';
+                    }
+                }
+                audio.init();
+            };
+            let isTownBossAlive = true;
+            let isForestBossAlive = true;
+            let isHouseBossAlive = true;
+            let isCastleBossAlive = true;
+            let isCastle1FMidBossAlive = true;
+            let isCastle2FMidBossAlive = true;
+            let isAbyssMidBossAlive = true; // 牛鬼 (B2)
+            let isAbyssBoss1Alive = true;   // 邪悪な陰陽師 (B3)
+            let isAbyssBoss2Alive = true;   // イザナミ (B3)
+            let isAbyssFinalBossAlive = true; // よみがえりしイザナミ (B1出口)
+            let isAbyssBossAlive = true; // 互換性のため維持
+            let hasPlayerClearedGame = false;
+
+            window.showDungeonSelect = () => {
+                document.getElementById('dungeon-select-modal').style.display = 'block';
+                if (!isTownBossAlive) {
+                    document.getElementById('forest-select-btn').style.display = 'block';
+                }
+                if (!isForestBossAlive) {
+                    document.getElementById('house-select-btn').style.display = 'block';
+                }
+                if (!isHouseBossAlive) {
+                    document.getElementById('castle-select-btn').style.display = 'block';
+                }
+                if (!isCastleBossAlive) {
+                    document.getElementById('abyss-select-btn').style.display = 'block';
+                }
+            };
+            window.closeDungeonSelect = () => document.getElementById('dungeon-select-modal').style.display = 'none';
+            window.enterDungeon = async (id = 'town', floor = 1) => {
+                const overlay = document.getElementById('transition-overlay');
+                overlay.style.opacity = '1';
+                await new Promise(r => setTimeout(r, 1000));
+
+                audio.playSE('stairs');
+                player.currentDungeonId = id;
+                currentFloor = floor;
+                if (id === 'town') MAP = MAP_TOWN;
+                else if (id === 'forest') MAP = MAP_FOREST;
+                else if (id === 'house') MAP = (floor === 1 ? MAP_HOUSE_1F : MAP_HOUSE_2F);
+                else if (id === 'castle') MAP = (floor === 1 ? MAP_CASTLE_1F : (floor === 2 ? MAP_CASTLE_2F : MAP_CASTLE_3F));
+                else if (id === 'abyss') MAP = (floor === 1 ? MAP_ABYSS_B1 : (floor === 2 ? MAP_ABYSS_B2 : MAP_ABYSS_B3));
+
+                if (!visitedMaps[id][floor]) {
+                    const size = (id === 'town' || id === 'house' || id === 'forest') ? 16 : 25; // abyss, castle(24->25としても実用上問題なしだが厳密には24)
+                    visitedMaps[id][floor] = Array(size).fill().map(() => Array(size).fill(false));
+                }
+                visited = visitedMaps[id][floor];
+                if (id === 'town' && floor === 1) { player.x = 1; player.z = 1; }
+                else if (id === 'forest' && floor === 1) { player.x = 7; player.z = 1; }
+                else if (id === 'house' && floor === 1) {
+                    if (player.x === 14 && player.z === 1) { /* ok */ } else { player.x = 1; player.z = 1; }
+                }
+                else if (id === 'house' && floor === 2) { player.x = 14; player.z = 1; }
+                else if (id === 'castle' && floor === 1) {
+                    if (player.x === 1 && player.z === 22) { /* stay at stairs */ }
+                    else { player.x = 11; player.z = 1; }
+                }
+                else if (id === 'abyss' && floor === 1) {
+                    if (currentGameState === GameState.DUNGEON) { /* floor movement */ }
+                    else { player.x = 12; player.z = 1; }
+                }
+
+                player.dir = 2; player.targetRot = Math.PI;
+                player.targetPos.set(player.x * GS, 1.6, player.z * GS);
+                camera.position.copy(player.targetPos); camera.rotation.y = player.targetRot;
+                currentGameState = GameState.DUNGEON;
+                document.getElementById('town-overlay').style.display = 'none';
+                document.getElementById('three-container').style.display = 'block';
+                document.getElementById('minimap-container').style.display = 'block';
+                closeDungeonSelect();
+                audio.playBGM(id === 'town' ? 'dungeon' : id);
+                loadMap();
+                updateUI();
+
+                await new Promise(r => setTimeout(r, 500));
+                overlay.style.opacity = '0';
+            };
+            window.closeModal = () => document.getElementById('facility-modal').style.display = 'none';
+            window.buy = (id) => {
+                const items = {
+                    sword1: { n: "古びた打刀", p: 50, a: 30 },
+                    sword2: { n: "手入れされた刀", p: 150, a: 55 },
+                    sword3: { n: "名入りの脇差", p: 400, a: 100 },
+                    sword4: { n: "業物・蜻蛉切", p: 1200, a: 160 },
+                    sword5: { n: "名工の打刀", p: 2500, a: 280 },
+                    sword6: { n: "退魔の太刀", p: 5800, a: 420 },
+                    sword7: { n: "破邪の御神刀", p: 13000, a: 750 },
+                    armor1: { n: "使い古しの腹巻", p: 40, d: 5 },
+                    armor2: { n: "厚手の革具足", p: 120, d: 10 },
+                    armor3: { n: "鉄錆の胸当て", p: 350, d: 15 },
+                    armor4: { n: "当世具足", p: 850, d: 20 },
+                    armor5: { n: "名家の当世具足", p: 1800, d: 25 },
+                    armor6: { n: "呪除けの長着", p: 4200, d: 30 },
+                    armor7: { n: "神職の装束", p: 11000, d: 35 },
+                    sword8: { n: "妖刀・村正", p: 25000, a: 1200 },
+                    sword9: { n: "神刀・天叢雲", p: 50000, a: 2200 },
+                    sword10: { n: "極-修羅の太刀", p: 120000, a: 5000 },
+                    armor8: { n: "白銀の陣羽織", p: 22000, d: 40 },
+                    armor9: { n: "黄金の甲冑", p: 45000, d: 45 },
+                    armor10: { n: "龍神の鱗具足", p: 100000, d: 50 },
+                    yakumari: { n: "回復の丸薬", p: 15000, h: 100 },
+                    myouyaku: { n: "大回復の妙薬", p: 100000, h: 1000 }
+                };
+                const it = items[id];
+                if (id === 'yakumari' || id === 'myouyaku') {
+                    if (player.items[id] >= 20) { alert("これ以上は持てぬ。"); return; }
+                    if (player.money >= it.p) {
+                        player.money -= it.p; player.items[id]++; updateUI();
+                        audio.playSE('buy');
+                    } else alert("銭が足りぬ。");
+                    return;
+                }
+                let isWeaker = false;
+                if (id.includes('sword') && it.a <= player.atk) {
+                    isWeaker = true;
+                } else if (id.includes('armor') && it.d <= player.def) {
+                    isWeaker = true;
+                }
+
+                if (isWeaker) {
+                    const confirmBuy = confirm(`【警告】現在装備している品と同じ、もしくはそれより弱い装備です。\n本当に「${it.n}」を購入しますか？`);
+                    if (!confirmBuy) return;
+                }
+
+                if (player.money >= it.p) {
+                    player.money -= it.p;
+                    if (id.includes('sword')) { player.weapon = it.n; player.atk = it.a; }
+                    else { player.armor = it.n; player.def = it.d; }
+                    updateUI(); closeModal();
+                    audio.playSE('buy');
+                } else alert("銭が足りぬ。");
+            };
+            window.rest = () => {
+                if (player.money >= 20) {
+                    player.money -= 20; player.hp = player.maxHp; player.mp = player.maxMp;
+                    // 町で休むと妖怪屋敷の中ボスが復活
+                    houseMidBosses = { h1_1: true, h1_2: true, h2_1: true, h2_2: true, h2_3: true };
+                    updateUI(); closeModal();
+                    audio.playSE('rest');
+                } else alert("銭が足りぬ。");
+            };
+
+            window.useItem = async (id) => {
+                if (player.items[id] <= 0 || (currentGameState === GameState.BATTLE && battleBusy)) return;
+                const heals = { yakumari: 100, myouyaku: 1000 };
+                const names = { yakumari: "丸薬", myouyaku: "妙薬" };
+                const healAmt = heals[id];
+                player.hp = Math.min(player.maxHp, player.hp + healAmt);
+                player.items[id]--;
+                logExploration(`${names[id]}を使用した。体力が回復した。`);
+                audio.playSE('stairs'); // 回復音の代用
+                updateUI();
+
+                if (currentGameState === GameState.BATTLE) {
+                    battleBusy = true;
+                    await new Promise(r => setTimeout(r, 800));
+                    await enemyTurn();
+                    battleBusy = false;
+                    updateUI();
+                }
+            };
+
+            window.saveGame = () => {
+                const data = {
+                    player: {
+                        lv: player.lv, exp: player.exp, nextExp: player.nextExp,
+                        hp: player.hp, maxHp: player.maxHp, mp: player.mp, maxMp: player.maxMp,
+                        money: player.money, weapon: player.weapon, armor: player.armor,
+                        atk: player.atk, def: player.def, currentDungeonId: player.currentDungeonId,
+                        items: player.items
+                    },
+                    progress: {
+                        town: isTownBossAlive, forest: isForestBossAlive, house: isHouseBossAlive,
+                        castle: isCastleBossAlive, castle1fMid: isCastle1FMidBossAlive, castle2fMid: isCastle2FMidBossAlive,
+                        abyssMid: isAbyssMidBossAlive, abyssBoss1: isAbyssBoss1Alive, abyssBoss2: isAbyssBoss2Alive, abyssFinal: isAbyssFinalBossAlive,
+                        abyss: isAbyssBossAlive, clear: hasPlayerClearedGame, seenClear: typeof hasSeenClearDialogue !== 'undefined' ? hasSeenClearDialogue : false
+                    },
+                    maps: visitedMaps
+                };
+                localStorage.setItem('edo_rpg_save', JSON.stringify(data));
+                logExploration("―― 記録を綴った。");
+                alert("進捗を懐に収めた。");
+                checkLoadBtn();
+                closeConfirm();
+            };
+
+            window.loadGame = () => {
+                const json = localStorage.getItem('edo_rpg_save');
+                if (!json) return;
+                const data = JSON.parse(json);
+                Object.assign(player, data.player);
+                if (!player.items) player.items = { yakumari: 0, myouyaku: 0 };
+                isTownBossAlive = data.progress.town;
+                isForestBossAlive = data.progress.forest;
+                isHouseBossAlive = data.progress.house;
+                isCastleBossAlive = data.progress.castle;
+                isCastle1FMidBossAlive = data.progress.castle1fMid || true;
+                isCastle2FMidBossAlive = data.progress.castle2fMid || true;
+                if (data.progress.abyssMid !== undefined) {
+                    isAbyssMidBossAlive = data.progress.abyssMid;
+                    isAbyssBoss1Alive = data.progress.abyssBoss1;
+                    isAbyssBoss2Alive = data.progress.abyssBoss2;
+                    isAbyssFinalBossAlive = data.progress.abyssFinal;
+                }
+                isAbyssBossAlive = data.progress.abyss;
+                hasPlayerClearedGame = data.progress.clear || false;
+                hasSeenClearDialogue = data.progress.seenClear || false;
+                if (data.maps) visitedMaps = data.maps;
+                updateUI();
+                logExploration("―― 以前の記憶を呼び覚ました。");
+                alert("旅の続きを始めよう。");
+                closeConfirm();
+            };
+
+            window.openConfirm = (msg, onYes) => {
+                document.getElementById('confirm-msg').innerText = msg;
+                document.getElementById('confirm-modal').style.display = 'block';
+                document.getElementById('confirm-yes-btn').onclick = onYes;
+            };
+
+            function checkLoadBtn() {
+                const btn = document.getElementById('load-game-btn');
+                if (localStorage.getItem('edo_rpg_save')) {
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                } else {
+                    btn.disabled = true;
+                    btn.style.opacity = "0.4";
+                }
+            }
+
+            function updateUI() {
+                document.getElementById('level-text').innerText = player.lv;
+                document.getElementById('exp-text').innerText = `${player.exp} / ${player.nextExp}`;
+                document.getElementById('hp-text').innerText = `${Math.floor(player.hp)}/${player.maxHp}`; document.getElementById('hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
+                document.getElementById('mp-text').innerText = `${Math.floor(player.mp)}/${player.maxMp}`; document.getElementById('mp-bar').style.width = (player.mp / player.maxMp * 100) + '%';
+                document.getElementById('stat-atk').innerText = player.atk; document.getElementById('stat-def').innerText = player.def;
+                document.getElementById('money-text').innerText = player.money; document.getElementById('weapon-name').innerText = player.weapon; document.getElementById('armor-name').innerText = player.armor;
+
+                const yk = player.items.yakumari;
+                const ykRow = document.getElementById('yakumari-row');
+                if (yk > 0) {
+                    ykRow.style.display = 'block';
+                    document.getElementById('item-yakumari-count').innerText = yk;
+                    document.getElementById('use-yakumari-btn').disabled = (player.hp >= player.maxHp || battleBusy);
+                } else { ykRow.style.display = 'none'; }
+
+                const my = player.items.myouyaku;
+                const myRow = document.getElementById('myouyaku-row');
+                if (my > 0) {
+                    myRow.style.display = 'block';
+                    document.getElementById('item-myouyaku-count').innerText = my;
+                    document.getElementById('use-myouyaku-btn').disabled = (player.hp >= player.maxHp || battleBusy);
+                } else { myRow.style.display = 'none'; }
+
+                const names = { town: '治安の悪い下町', forest: '野盗のすむ森', house: '妖怪屋敷', castle: '鬼の住む廃城', abyss: '奈落洞窟' };
+                const locName = currentGameState === GameState.TOWN ? '宿場町' : `${names[player.currentDungeonId]} ${player.currentDungeonId === 'abyss' ? '地下' : ''}${currentFloor}階`;
+                document.getElementById('status-location').innerText = locName;
+
+                // バーチャル操作パネルの表示制御 (ダンジョン内のみ表示、戦闘・宿場町では非表示)
+                const ctrl = document.getElementById('virtual-controller');
+                if (ctrl) {
+                    if (currentGameState === GameState.DUNGEON) {
+                        ctrl.style.display = 'block';
+                    } else {
+                        ctrl.style.display = 'none';
+                    }
+                }
+            }
+
+            function logExploration(m) { const log = document.getElementById('exploration-log'); const e = document.createElement('div'); e.innerText = "・" + m; log.prepend(e); }
+            window.closeConfirm = () => document.getElementById('confirm-modal').style.display = 'none';
+
+            function checkEncounter() {
+                if (player.currentDungeonId === 'town' && player.x === 14 && player.z === 14 && isTownBossAlive) { startBattle('boss'); return; }
+                if (player.currentDungeonId === 'forest' && player.x === 1 && player.z === 14 && isForestBossAlive) { startBattle('boss'); return; }
+                if (player.currentDungeonId === 'house' && currentFloor === 2 && player.x === 1 && player.z === 13 && isHouseBossAlive) { startBattle('boss'); return; }
+
+                if (player.currentDungeonId === 'castle' && currentFloor === 3 && player.x === 11 && player.z === 8 && isCastleBossAlive) { startBattle('boss'); return; }
+
+                // 奈落洞窟の判定
+                if (player.currentDungeonId === 'abyss') {
+                    if (currentFloor === 2 && player.x === 23 && player.z === 2 && isAbyssMidBossAlive) { startBattle('mid'); return; }
+                    if (currentFloor === 3 && player.x === 12 && player.z === 1) {
+                        if (isAbyssBoss1Alive) { startBattle('boss1'); return; }
+                        else if (isAbyssBoss2Alive) { startBattle('boss2'); return; }
+                    }
+                    if (currentFloor === 1 && player.x === 12 && player.z === 2 && !isAbyssBoss2Alive && isAbyssFinalBossAlive) {
+                        startBattle('final'); return;
+                    }
+                }
+
+                // 中ボスの判定
+                if (player.currentDungeonId === 'castle' && currentFloor === 1 && player.x === 1 && player.z === 21 && isCastle1FMidBossAlive) { startBattle('mid'); return; }
+                if (player.currentDungeonId === 'castle' && currentFloor === 2 && player.x === 12 && player.z === 14 && isCastle2FMidBossAlive) { startBattle('mid'); return; }
+                if (player.currentDungeonId === 'house') {
+                    const midPos = currentFloor === 1 ? [{ x: 1, z: 14, id: 'h1_1' }, { x: 14, z: 14, id: 'h1_2' }]
+                        : [{ x: 2, z: 1, id: 'h2_1' }, { x: 10, z: 8, id: 'h2_2' }, { x: 14, z: 13, id: 'h2_3' }];
+                    for (const p of midPos) {
+                        if (player.x === p.x && player.z === p.z && houseMidBosses[p.id]) {
+                            startBattle('mid', p.id); return;
+                        }
+                    }
+                }
+
+                if (player.currentDungeonId !== 'town' && player.currentDungeonId !== 'forest' && player.currentDungeonId !== 'house' && player.currentDungeonId !== 'castle' && player.currentDungeonId !== 'abyss') return;
+                if (Math.random() < 0.1) startBattle(false);
+            }
+            let currentMidBossId = null;
+            async function startBattle(type, midId = null) {
+                currentGameState = GameState.BATTLE;
+                currentMidBossId = midId;
+                battleBusy = false; // 初期化
+                let t = [];
+                let dialogueKey = null;
+                if (player.currentDungeonId === 'town') {
+                    t = [{ n: "よっぱらい男", h: 55, a: 12, img: "assets/enemy_thug.png", g: 30, e: 10 }, { n: "辻斬り", h: 85, a: 18, img: "assets/enemy_phantom.png", g: 65, e: 20 }];
+                    enemy = type === 'boss' ? { n: "下町のボス", h: 450, a: 30, img: "assets/enemy_shitamachiboss.png", g: 1200, e: 300 } : { ...t[Math.floor(Math.random() * t.length)] };
+                    if (type === 'boss') dialogueKey = 'shitamachi';
+                } else if (player.currentDungeonId === 'forest') {
+                    t = [
+                        { n: "野犬", h: 180, a: 25, img: "assets/enemy_wilddog.png", g: 120, e: 80 },
+                        { n: "追い剝ぎ女", h: 260, a: 32, img: "assets/enemy_bushwhacker.png", g: 250, e: 150 },
+                        { n: "野盗", h: 450, a: 40, img: "assets/enemy_bandit.png", g: 450, e: 350 }
+                    ];
+                    enemy = type === 'boss' ? { n: "野盗団の首領", h: 2500, a: 50, img: "assets/enemy_banditboss.png", g: 8000, e: 5000 } : { ...t[Math.floor(Math.random() * t.length)] };
+                    if (type === 'boss') dialogueKey = 'forest';
+                } else if (player.currentDungeonId === 'house') {
+                    t = [
+                        { n: "おばけ提灯", h: 320, a: 35, img: "assets/enemy_bakechouchin.png", g: 500, e: 450 },
+                        { n: "猫又と一つ目小僧", h: 480, a: 32, img: "assets/enemy_nekomata.png", g: 750, e: 700, multi: true },
+                        { n: "のっぺらぼう", h: 550, a: 42, img: "assets/enemy_noppera.png", g: 900, e: 850, pre: true }
+                    ];
+                    if (type === 'boss') {
+                        enemy = { n: "妖怪屋敷の化け狐", h: 24000, a: 55, img: "assets/enemy_bakekitsuneboss.png", g: 25000, e: 15000 };
+                        dialogueKey = 'house';
+                    } else if (type === 'mid') {
+                        enemy = { n: "身代わり狐", h: 3000, a: 45, img: "assets/enemy_fox.png", g: 5000, e: 3000 };
+                    } else {
+                        enemy = { ...t[Math.floor(Math.random() * t.length)] };
+                    }
+                } else if (player.currentDungeonId === 'castle') {
+                    t = [
+                        { n: "石斧の子鬼", h: 850, a: 45, img: "assets/enemy_kooni.png", g: 1600, e: 1300 },
+                        { n: "槍持ちの鬼", h: 1300, a: 52, img: "assets/enemy_oni.png", g: 2800, e: 2200 },
+                        { n: "落ち武者亡霊", h: 1000, a: 55, img: "assets/enemy_ochimusha.png", g: 3000, e: 2500, pre: true }
+                    ];
+                    if (type === 'boss') {
+                        enemy = { n: "黒鬼 (城主)", h: 95000, a: 50, img: "assets/enemy_kurooni.png", g: 120000, e: 80000, multi: true };
+                        dialogueKey = 'castle';
+                    } else if (type === 'mid') {
+                        if (currentFloor === 1) enemy = { n: "青鬼 (一階守護)", h: 18000, a: 60, img: "assets/enemy_aooni.png", g: 18000, e: 12000 };
+                        else enemy = { n: "赤鬼 (二階守護)", h: 32000, a: 60, img: "assets/enemy_akaoni.png", g: 35000, e: 25000 };
+                    } else {
+                        enemy = { ...t[Math.floor(Math.random() * t.length)] };
+                    }
+                } else if (player.currentDungeonId === 'abyss') {
+                    t = [
+                        { n: "はにわ兵士", h: 2500, a: 60, img: "assets/enemy_haniwa.png", g: 5000, e: 4000 },
+                        { n: "がしゃどくろ", h: 4000, a: 65, img: "assets/enemy_gasyadokuro.png", g: 8000, e: 6500, pre: true },
+                        { n: "カラス天狗", h: 3200, a: 58, img: "assets/image_d732e07b.png", g: 7000, e: 6000, multi: true }
+                    ];
+                    if (type === 'mid') {
+                        enemy = { n: "牛鬼 (地下二階守護)", h: 150000, a: 75, img: "assets/enemy_ushioni.png", g: 150000, e: 100000 };
+                    } else if (type === 'boss1') {
+                        enemy = { n: "邪悪な陰陽師", h: 180000, a: 70, img: "assets/enemy_onmyoujiboss.png", g: 200000, e: 150000, bgm: 'battle3' };
+                        dialogueKey = 'onmyoji';
+                    } else if (type === 'boss2') {
+                        enemy = { n: "イザナミ", h: 450000, a: 60, img: "assets/enemy_izanami.png", g: 500000, e: 300000, multi: true, bgm: 'battle4' };
+                        dialogueKey = 'izanami';
+                    } else if (type === 'final') {
+                        enemy = { n: "よみがえりしイザナミ", h: 800000, a: 70, img: "assets/enemy_izanami_zombie.png", g: 0, e: 0, multi: true, bgm: 'battle4' };
+                        dialogueKey = 'izanami_final';
+                    } else {
+                        enemy = { ...t[Math.floor(Math.random() * t.length)] };
+                    }
+                }
+                currentGameState = GameState.BATTLE;
+                battleBusy = false;
+                updateUI();
+                document.getElementById('battle-overlay').style.display = 'block';
+                const img = document.getElementById('enemy-img');
+                img.src = enemy.img; img.style.display = 'block'; // 演出後に消えている可能性を考慮
+                // 演出用要素を掃除
+                const ev = document.getElementById('enemy-visual');
+                [...ev.querySelectorAll('.slice-upper, .slice-lower')].forEach(e => e.remove());
+
+                document.getElementById('enemy-name-plate').innerText = enemy.n;
+                const isSpecial = (type && type !== false);
+                const bgm = enemy.bgm || (isSpecial ? 'boss' : 'battle');
+                audio.playBGM(bgm); logExploration(isSpecial ? "!! 豪傑出現 !!" : `${enemy.n}が出現!`);
+                if (enemy.pre) {
+                    logExploration("―― 先手を取られた! ――");
+                    battleBusy = true;
+                    enemyTurn().then(() => {
+                        battleBusy = false;
+                        updateUI();
+                    });
+                }
+                
+                if (dialogueKey && bossDialogues[dialogueKey]) {
+                    enemy.dialogueKey = dialogueKey;
+                    await displayBossDialogue(bossDialogues[dialogueKey], false);
+                }
+            }
+            async function enemyTurn(isDefending = false) {
+                const hits = enemy.multi ? 2 : 1;
+                for (let i = 0; i < hits; i++) {
+                    await new Promise(r => setTimeout(r, 600));
+                    audio.playSE('damage'); document.getElementById('game-container').classList.add('shake'); setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
+                    let dE = Math.floor(Math.random() * 10) + enemy.a - player.def;
+                    if (isDefending) dE = Math.floor(dE / 2);
+                    if (dE < 1) dE = 1;
+                    player.hp -= dE;
+                    logExploration(`${enemy.n}の打撃! ${dE}の痛手!`);
+                    updateUI();
+                    if (player.hp <= 0) { alert("目の前が真っ暗になった..."); location.reload(); return; }
+                }
+            }
+            window.battleAction = (type) => {
+                if (battleBusy) return;
+                if (type === 'run') { if (enemy.n !== "下町のボス" && Math.random() > 0.5) { endBattle(); return; } else { logExploration("逃げられぬ!"); } }
+                if (type === 'skill' && player.mp < 10) { logExploration("気力が足りぬ!"); return; }
+
+                const performAction = async () => {
+                    battleBusy = true;
+                    let d = 0;
+                    if (type === 'attack') {
+                        audio.playSE('attack');
+                        const slash = document.createElement('div'); slash.className = 'slash-line';
+                        document.getElementById('enemy-visual').appendChild(slash);
+                        setTimeout(() => slash.remove(), 400);
+
+                        document.getElementById('enemy-visual').classList.add('shake');
+                        setTimeout(() => document.getElementById('enemy-visual').classList.remove('shake'), 400);
+                        d = Math.floor(Math.random() * 10) + player.atk;
+                        enemy.h -= d;
+                        await new Promise(r => setTimeout(r, 300));
+                        logExploration(`斬撃! ${d}ダメ。`);
+                    } else if (type === 'skill') {
+                        audio.playSE('attack');
+                        const slash1 = document.createElement('div'); slash1.className = 'slash-line';
+                        slash1.style.transform = 'rotate(45deg)';
+                        const slash2 = document.createElement('div'); slash2.className = 'slash-line';
+                        slash2.style.transform = 'rotate(-45deg)';
+                        const ev = document.getElementById('enemy-visual');
+                        ev.appendChild(slash1); ev.appendChild(slash2);
+                        setTimeout(() => { slash1.remove(); slash2.remove(); }, 400);
+
+                        player.mp -= 10;
+                        player.hp -= 10; // 体力も消費
+                        document.getElementById('enemy-visual').classList.add('shake');
+                        setTimeout(() => document.getElementById('enemy-visual').classList.remove('shake'), 400);
+                        d = Math.floor(player.atk * 3.5);
+                        enemy.h -= d;
+                        updateUI();
+                        await new Promise(r => setTimeout(r, 300));
+                        logExploration(`秘奥義! ${Math.floor(d)}ダメ!`);
+                    } else if (type === 'defend') {
+                        logExploration("身を固めて凌ぐ! (気力5回復)");
+                        player.mp = Math.min(player.maxMp, player.mp + 5);
+                    }
+                    updateUI();
+
+                    if (type !== 'run' && type !== 'defend' && enemy.h <= 0) {
+                        // 撃破演出
+                        audio.playSE('kill');
+                        const ev = document.getElementById('enemy-visual');
+                        const img = document.getElementById('enemy-img');
+                        const src = img.src;
+                        img.style.display = 'none'; // 本体を隠す
+
+                        const upper = document.createElement('img'); upper.src = src; upper.className = 'slice-upper';
+                        upper.style.cssText = "max-width:90%; max-height:90%; object-fit:contain; filter: brightness(1.6) contrast(1.3); mix-blend-mode: multiply;";
+                        const lower = document.createElement('img'); lower.src = src; lower.className = 'slice-lower';
+                        lower.style.cssText = "max-width:90%; max-height:90%; object-fit:contain; filter: brightness(1.6) contrast(1.3); mix-blend-mode: multiply;";
+                        ev.appendChild(upper); ev.appendChild(lower);
+
+                        await new Promise(r => setTimeout(r, 1000));
+                        
+                        if (enemy.dialogueKey && bossDialogues[enemy.dialogueKey]) {
+                            await displayBossDialogue(bossDialogues[enemy.dialogueKey], true);
+                        }
+
+                        logExploration(`勝利! ${enemy.g}文、功徳${enemy.e}獲得。`);
+                        player.money += enemy.g; player.exp += enemy.e;
+                        while (player.exp >= player.nextExp) {
+                            player.lv++; player.exp -= player.nextExp;
+                            player.nextExp = Math.floor(player.nextExp * 1.4);
+                            player.maxHp += 40; player.mp = player.maxMp;
+                            audio.playSE('levelup');
+                            logExploration(`段位が${player.lv}に上昇! やる気がみなぎった!`);
+                        }
+                        if (enemy.n === "下町のボス") isTownBossAlive = false;
+                        if (enemy.n === "野盗団の首領") { isForestBossAlive = false; logExploration("--- 森を平定した ---"); }
+                        if (enemy.n === "妖怪屋敷の化け狐") { isHouseBossAlive = false; logExploration("--- 妖怪屋敷を浄化した ---"); }
+                        if (enemy.n === "青鬼 (一階守護)") { isCastle1FMidBossAlive = false; logExploration("--- 一階の青鬼を討ち取った ---"); }
+                        if (enemy.n === "赤鬼 (二階守護)") { isCastle2FMidBossAlive = false; logExploration("--- 二階の赤鬼を討ち取った ---"); }
+                        if (enemy.n === "黒鬼 (城主)") { isCastleBossAlive = false; logExploration("--- 廃城を平定した ---"); }
+                        if (enemy.n === "牛鬼 (地下二階守護)") { isAbyssMidBossAlive = false; logExploration("--- 黄泉の門番を討ち取った ---"); }
+                        if (enemy.n === "邪悪な陰陽師") { isAbyssBoss1Alive = false; logExploration("--- 凶兆の源を断った ---"); }
+                        if (enemy.n === "イザナミ") { isAbyssBoss2Alive = false; logExploration("--- 冥府の理を正した ---"); }
+                        if (enemy.n === "よみがえりしイザナミ") { isAbyssFinalBossAlive = false; logExploration("--- 永遠の安らぎを与えた ---"); }
+                        if (currentMidBossId) { houseMidBosses[currentMidBossId] = false; logExploration("--- 身代わりを討ち取った ---"); }
+                        updateUI();
+
+                        if (enemy.n === "邪悪な陰陽師") {
+                            setTimeout(() => startBattle('boss2'), 2000); 
+                        } else if (enemy.n === "よみがえりしイザナミ") {
+                            hasPlayerClearedGame = true; 
+                            setTimeout(endBattle, 1500); 
+                        } else {
+                            endBattle();
+                        }
+                    } else if (type !== 'run') {
+                        await enemyTurn(type === 'defend');
+                    }
+                    battleBusy = false;
+                    updateUI();
+                };
+
+                performAction();
+            };
+            function endBattle() {
+                currentGameState = GameState.DUNGEON;
+                battleBusy = false;
+                document.getElementById('battle-overlay').style.display = 'none';
+                audio.playBGM(player.currentDungeonId === 'town' ? 'dungeon' : player.currentDungeonId);
+                loadMap();
+                updateUI();
+            }
+
+            const mCanvas = document.getElementById('minimap-canvas'); const mCtx = mCanvas.getContext('2d');
+            const fCanvas = document.getElementById('full-map-canvas'); const fCtx = fCanvas.getContext('2d');
+            function drawMaps() {
+                const id = player.currentDungeonId;
+                const size = (id === 'town' || id === 'house' || id === 'forest') ? 16 : (id === 'castle' ? 24 : 25);
+                const floorText = (id === 'town' || id === 'forest') ? '' : ` ${id === 'abyss' ? '地下' : ''}${currentFloor}階`;
+                const dirArrows = ['▲', '▶', '▼', '◀'];
+                mCtx.fillStyle = '#000'; mCtx.fillRect(0, 0, 150, 150);
+                mCtx.textAlign = 'center'; mCtx.textBaseline = 'middle';
+                for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+                    const mx = player.x + dx, mz = player.z + dz, dxr = (dx + 2) * 30, dzr = (dz + 2) * 30;
+                    if (mx >= 0 && mx < size && mz >= 0 && mz < size && visited[mz][mx]) {
+                        mCtx.fillStyle = MAP[mz][mx] === 1 ? '#333' : (MAP[mz][mx] >= 2 ? '#852' : '#111'); mCtx.fillRect(dxr, dzr, 28, 28);
+                        let ex = 1;
+                        if (id === 'forest') ex = 7;
+                        else if (id === 'castle') ex = 11;
+                        else if (id === 'abyss') ex = 12;
+                        if (mx === ex && mz === 1 && currentFloor === 1) { mCtx.fillStyle = '#0ff'; mCtx.font = '18px serif'; mCtx.fillText('⌂', dxr + 14, dzr + 14); }
+                        if (MAP[mz][mx] === 2) { mCtx.fillStyle = '#fff'; mCtx.font = '16px serif'; mCtx.fillText('▲', dxr + 14, dzr + 14); }
+                        if (MAP[mz][mx] === 3) { mCtx.fillStyle = '#fff'; mCtx.font = '16px serif'; mCtx.fillText('▼', dxr + 14, dzr + 14); }
+                    }
+                }
+                mCtx.fillStyle = '#f00'; mCtx.font = '24px serif'; mCtx.fillText(dirArrows[player.dir], 75, 75);
+                if (document.getElementById('full-map-overlay').style.display === 'flex') {
+                    const names = { town: '治安の悪い下町', forest: '野盗のすむ森', house: '妖怪屋敷', castle: '鬼の住む廃城', abyss: '奈落洞窟' };
+                    document.getElementById('full-map-title').innerText = `―― ${names[id]}${floorText} 地図 ――`;
+                    fCtx.fillStyle = '#050505'; fCtx.fillRect(0, 0, 400, 400); const cs = 400 / size;
+                    fCtx.textAlign = 'center'; fCtx.textBaseline = 'middle';
+                    for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (visited[z][x]) {
+                        fCtx.fillStyle = MAP[z][x] === 1 ? '#444' : (MAP[z][x] >= 2 ? '#a62' : '#222'); fCtx.fillRect(x * cs, z * cs, cs - 1, cs - 1);
+                        let ex = 1;
+                        if (id === 'forest') ex = 7;
+                        else if (id === 'castle') ex = 11;
+                        else if (id === 'abyss') ex = 12;
+                        if (x === ex && z === 1 && currentFloor === 1) { fCtx.fillStyle = '#0ff'; fCtx.font = (size === 16 ? '20px' : '14px') + ' serif'; fCtx.fillText('⌂', x * cs + cs / 2, z * cs + cs / 2); }
+                        if (MAP[z][x] === 2) { fCtx.fillStyle = '#fff'; fCtx.font = (size === 16 ? '20px' : '14px') + ' serif'; fCtx.fillText('▲', x * cs + cs / 2, z * cs + cs / 2); }
+                        if (MAP[z][x] === 3) { fCtx.fillStyle = '#fff'; fCtx.font = (size === 16 ? '20px' : '14px') + ' serif'; fCtx.fillText('▼', x * cs + cs / 2, z * cs + cs / 2); }
+                    }
+                    fCtx.fillStyle = '#f00'; fCtx.font = (size === 16 ? '24px' : '16px') + ' serif'; fCtx.fillText(dirArrows[player.dir], player.x * cs + cs / 2, player.z * cs + cs / 2);
+                }
+            }
+
+            window.movePlayer = (action) => {
+                if (currentGameState !== GameState.DUNGEON) return;
+                if (document.getElementById('confirm-modal').style.display === 'block') return;
+
+                const a = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2][player.dir]; let nx = player.x, nz = player.z;
+                if (action === 'w') { nx += Math.round(Math.sin(a)); nz -= Math.round(Math.cos(a)); }
+                else if (action === 's') { nx -= Math.round(Math.sin(a)); nz += Math.round(Math.cos(a)); }
+                else if (action === 'a') { player.dir = (player.dir + 3) % 4; player.targetRot += Math.PI / 2; }
+                else if (action === 'd') { player.dir = (player.dir + 1) % 4; player.targetRot -= Math.PI / 2; }
+
+                if (nx !== player.x || nz !== player.z) {
+                    const nextType = MAP[nz] ? MAP[nz][nx] : 1;
+                    if (nextType !== 1) {
+                        player.x = nx; player.z = nz; updateMapping(); player.targetPos.set(nx * GS, 1.6, nz * GS);
+                        let ex = 1;
+                        if (player.currentDungeonId === 'forest') ex = 7;
+                        else if (player.currentDungeonId === 'castle') ex = 11;
+                        else if (player.currentDungeonId === 'abyss') ex = 12;
+                        if (nx === ex && nz === 1 && currentFloor === 1) openConfirm('宿場町へ戻りますか？', returnToTown);
+                        else if (player.currentDungeonId === 'castle' && currentFloor === 3 && nx === 11 && nz === 7) openConfirm('1階につながる穴があるはいりますか？', () => {
+                            document.getElementById('confirm-modal').style.display = 'none';
+                            enterDungeon('castle', 1);
+                        });
+                        else if (nextType === 2) { logExploration("上り階段だ。"); enterDungeon(player.currentDungeonId, currentFloor + 1); /* 座標維持 */ }
+                        else if (nextType === 3) { logExploration("下り階段だ。"); enterDungeon(player.currentDungeonId, currentFloor - 1); /* 座標維持 */ }
+                        else checkEncounter();
+                    }
+                    else logExploration("壁だ。");
+                }
+            };
+
+            window.showMap = (visible) => {
+                if (currentGameState !== GameState.DUNGEON) return;
+                const overlay = document.getElementById('full-map-overlay');
+                if (visible) {
+                    overlay.style.display = 'flex';
+                } else {
+                    overlay.style.display = 'none';
+                }
+            };
+
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && currentGameState === GameState.DUNGEON) window.showMap(true);
+                if (currentGameState !== GameState.DUNGEON) return;
+
+                // モーダル表示中は移動を無視
+                if (document.getElementById('confirm-modal').style.display === 'block') return;
+
+                const key = e.key.toLowerCase();
+                if (key === 'w' || e.key === 'ArrowUp') window.movePlayer('w');
+                else if (key === 's' || e.key === 'ArrowDown') window.movePlayer('s');
+                else if (key === 'a' || e.key === 'ArrowLeft') window.movePlayer('a');
+                else if (key === 'd' || e.key === 'ArrowRight') window.movePlayer('d');
+            });
+            window.addEventListener('keyup', (e) => { if (e.code === 'Space') window.showMap(false); });
+
+            function animate() {
+                requestAnimationFrame(animate); if (currentGameState === GameState.TOWN) return;
+
+                // 最短経路での回転補間
+                let diffRot = player.targetRot - camera.rotation.y;
+                while (diffRot > Math.PI) diffRot -= Math.PI * 2;
+                while (diffRot < -Math.PI) diffRot += Math.PI * 2;
+                camera.rotation.y += diffRot * 0.1;
+
+                camera.position.lerp(player.targetPos, 0.1);
+                torch.intensity = 20 + Math.sin(Date.now() * 0.007) * 7;
+                bossEntity.position.y = 2.3 + Math.sin(Date.now() * 0.0025) * 0.35; bossEntity.rotation.y += 0.025;
+                drawMaps(); renderer.render(scene, camera);
+            }
+            animate(); updateUI();
+            window.onload = () => {
+                document.getElementById('three-container').style.display = 'none';
+                document.getElementById('minimap-container').style.display = 'none';
+                // 初回操作でBGMを開始（ブラウザ制限対策）
+                const startAudio = () => { audio.playBGM('town'); window.removeEventListener('click', startAudio); window.removeEventListener('keydown', startAudio); };
+                window.addEventListener('click', startAudio); window.addEventListener('keydown', startAudio);
+                audio.playBGM('town'); // 許可されている場合は即開始
+                checkLoadBtn();
+                openFacility('magistrate');
+            };
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+
+        </script>
+</body>
+
+</html>
